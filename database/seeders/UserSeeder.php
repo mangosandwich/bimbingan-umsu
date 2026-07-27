@@ -13,15 +13,15 @@ class UserSeeder extends Seeder
     {
         $demoUsers = [
             [
-                'name' => 'Superadmin',
-                'username' => 'superadmin',
-                'email' => 'superadmin@umsu.ac.id',
-                'role' => 'superadmin',
+                'name' => 'Super Admin',
+                'username' => 'admin',
+                'email' => 'admin@umsu.ac.id',
+                'role' => 'admin',
                 'department' => null,
                 'is_verified' => true,
             ],
             [
-                'name' => 'prodi',
+                'name' => 'Dr. Prodi Kaprodi',
                 'username' => 'prodi',
                 'email' => 'prodi@umsu.ac.id',
                 'role' => 'prodi',
@@ -29,30 +29,30 @@ class UserSeeder extends Seeder
                 'is_verified' => true,
             ],
             [
-                'name' => 'lecturer',
-                'username' => 'lecturer',
-                'email' => 'lecturer@umsu.ac.id',
+                'name' => 'Prof. Dr. Irwan, M.Si',
+                'username' => 'irwan',
+                'email' => 'irwan@umsu.ac.id',
                 'role' => 'lecturer',
                 'nidn' => '0012345678',
                 'department' => 'Magister Ilmu Komunikasi',
                 'is_verified' => true,
             ],
             [
-                'name' => 'student',
-                'username' => 'student',
-                'email' => 'student@umsu.ac.id',
+                'name' => 'Mahasiswa Demo',
+                'username' => 'mahasiswa',
+                'email' => 'mahasiswa@umsu.ac.id',
                 'role' => 'student',
                 'npm' => '2210000001',
                 'department' => 'Magister Ilmu Komunikasi',
                 'is_verified' => true,
             ],
             [
-                'name' => 'guest',
-                'username' => 'guest',
-                'email' => 'guest@umsu.ac.id',
+                'name' => 'Tamu Baru',
+                'username' => 'tamu',
+                'email' => 'tamu@gmail.com',
                 'role' => 'guest',
                 'department' => null,
-                'is_verified' => true,
+                'is_verified' => false,
             ]
         ];
 

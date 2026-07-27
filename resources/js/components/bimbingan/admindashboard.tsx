@@ -24,11 +24,11 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'theses' | 'users'>('overview');
 
   useEffect(() => {
-    const allowedRoles = ['superadmin', 'admin', 'prodi'];
+    const allowedRoles = ['admin', 'prodi'];
     if (!allowedRoles.includes(currentUser.role)) {
       setActiveTab('overview');
     }
-    if (activeTab === 'proposals' && currentUser.role !== 'prodi' && currentUser.role !== 'superadmin') {
+    if (activeTab === 'proposals' && currentUser.role !== 'prodi') {
       setActiveTab('overview');
     }
   }, [currentUser.role, activeTab]);
@@ -198,7 +198,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'proposals' && (currentUser.role === 'prodi' || currentUser.role === 'superadmin') && (
+        {activeTab === 'proposals' && currentUser.role === 'prodi' && (
           <ProposalsTab
             proposals={proposals}
             proposalTitles={proposalTitles}
@@ -206,7 +206,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'theses' && (currentUser.role === 'prodi' || currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
+        {activeTab === 'theses' && (currentUser.role === 'prodi' || currentUser.role === 'admin') && (
           <ThesesTab
             theses={theses}
             currentUser={currentUser}
@@ -216,7 +216,7 @@ export default function AdminDashboard({ currentUser, onRefresh }: AdminDashboar
           />
         )}
 
-        {activeTab === 'users' && (currentUser.role === 'admin' || currentUser.role === 'prodi' || currentUser.role === 'superadmin') && (
+        {activeTab === 'users' && (currentUser.role === 'admin' || currentUser.role === 'prodi') && (
           <UsersTab
             users={users}
             currentUser={currentUser}
