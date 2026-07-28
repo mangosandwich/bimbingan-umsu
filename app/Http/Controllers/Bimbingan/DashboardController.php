@@ -17,9 +17,15 @@ use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request, $tab = 'overview')
     {
+<<<<<<< HEAD
+        $activeTab = $tab ?: $request->route('tab') ?: 'overview';
+
+        $users = User::all()->map(function ($u) {
+=======
         $users = User::with('roles')->get()->map(function ($u) {
+>>>>>>> 16cbd2370db496579c39d3fa051d3ddfff99b452
             //User::all(): Mengambil semua record dari tabel users di database.
             //->map(function ($u): Memproses/mengubah setiap objek user satu per satu (dimana $u adalah satu individu user) di dalam memory sebelum dikembalikan ke variabel $users.
             $role = $u->roles->first()?->name;
@@ -128,6 +134,7 @@ class DashboardController extends Controller
                 'startTime' => $a->start_time,
                 'endTime' => $a->end_time,
                 'isDefault' => (bool)$a->is_default,
+                'rules' => $a->rules,
             ];
         });
 
@@ -154,6 +161,7 @@ class DashboardController extends Controller
         });
 
         return Inertia::render('dashboard', [
+            'activeTab' => $activeTab,
             'dbUsers' => $users,
             'dbProposals' => $proposals,
             'dbProposalTitles' => $proposalTitles,
