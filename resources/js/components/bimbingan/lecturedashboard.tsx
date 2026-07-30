@@ -1,129 +1,43 @@
 // components/bimbingan/LecturerDashboard.tsx
-import { useState } from 'react';
-import { usePage } from '@inertiajs/react';
-import { DB } from '@/db';
-import type { AppUser, Guidance, EventType, AvailabilityRule } from '@/types';
+import type { AppUser } from '@/types';
 
 import LecturerSidebar from './lecturer/LecturerSidebar';
 import StudentsTab from './lecturer/StudentsTab';
 import BookingsTab from './lecturer/BookingsTab';
 import SchedulingTab from './lecturer/SchedulingTab';
+import EventTypesTab from './lecturer/EventTypesTab';
+import RoleFooter from './RoleFooter';
+import { useLecturerLogic } from './lecturer/LecturerLogic';
 
 interface LecturerDashboardProps {
   currentUser: AppUser;
   onRefresh: () => void;
+  activeTab?: string;
 }
 
-export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDashboardProps) {
-  const { url } = usePage();
-
-  // DB States
-  const [theses, setTheses] = useState(DB.getTheses());
-  const [guidances, setGuidances] = useState(DB.getGuidances());
-  const [eventTypes, setEventTypes] = useState(DB.getEventTypes());
-  const [availabilityRules, setAvailabilityRules] = useState(DB.getAvailabilityRules());
-  const [bookings, setBookings] = useState(DB.getBookings());
-
-  const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
-
-  // Determine active tab based on topbar menu URL path
-  let activeTab: 'students' | 'scheduling' | 'bookings' = 'students';
-  if (url.includes('/dosen/persetujuan-jadwal') || url.includes('/dosen/permohonan-jadwal')) {
-    activeTab = 'bookings';
-  } else if (url.includes('/dosen/ketersediaan-waktu') || url.includes('/dosen/atur-jadwal')) {
-    activeTab = 'scheduling';
-  } else if (url.includes('/dosen/mahasiswa-bimbingan') || url.includes('/dosen/progres-mahasiswa') || url.includes('/dosen/verifikasi-log')) {
-    activeTab = 'students';
-  }
-
-  const refreshLocalData = () => {
-    setTheses(DB.getTheses());
-    setGuidances(DB.getGuidances());
-    setEventTypes(DB.getEventTypes());
-    setAvailabilityRules(DB.getAvailabilityRules());
-    setBookings(DB.getBookings());
-    onRefresh();
-  };
-
-  // Data Derivasi
-  const myStudents = theses.filter((t) => String(t.supervisorId) === String(currentUser.id) || t.supervisorId === 'user-lecturer-1');
-  const myEventTypes = eventTypes.filter((et) => String(et.lecturerId) === String(currentUser.id) || et.lecturerId === 'user-lecturer-1');
-  const myAvailabilities = availabilityRules.filter((ar) => String(ar.lecturerId) === String(currentUser.id) || ar.lecturerId === 'user-lecturer-1');
-  const myBookings = bookings.filter((b) =>
-    String(b.lecturerId) === String(currentUser.id) ||
-    b.lecturerId === 'user-lecturer-1' ||
-    (currentUser.role === 'lecturer' && (!b.lecturerName || b.lecturerName === currentUser.name))
-  );
-
-  // LOGIC FUNCTIONS
-  const handleVerifyGuidance = (guidanceId: string) => {
-    const updated = guidances.map((g) => (g.id === guidanceId ? { ...g, status: 'verified' as const } : g));
-    DB.saveGuidances(updated);
-    refreshLocalData();
-  };
-
-  const handleLecturerSubmitGuidance = (data: Omit<Guidance, 'id' | 'status' | 'createdBy' | 'creatorName' | 'createdAt'>) => {
-    const newGuidance: Guidance = {
-      ...data,
-      id: `guidance-${Date.now()}`,
-      createdBy: 'lecturer',
-      creatorName: currentUser.name,
-      status: 'verified',
-      createdAt: new Date().toISOString(),
-    };
-    DB.saveGuidances([...guidances, newGuidance]);
-    refreshLocalData();
-  };
-
-  const handleProcessBookingSubmit = (bookingId: string, type: 'confirm' | 'reject', note: string) => {
-    const updated = bookings.map((b) =>
-      b.id === bookingId ? { ...b, status: (type === 'confirm' ? 'confirmed' : 'rejected') as any, notes: note || undefined } : b
-    );
-    DB.saveBookings(updated);
-    refreshLocalData();
-  };
-
-  const handleCompleteBooking = (id: string) => {
-    const updated = bookings.map((b) => (b.id === id ? { ...b, status: 'completed' as const } : b));
-    DB.saveBookings(updated);
-    refreshLocalData();
-  };
-
-  const handleAddAvailability = (dayOfWeek: number, startTime: string, endTime: string, isDefault: boolean = false) => {
-    const newAr: AvailabilityRule = {
-      id: `ar-${Date.now()}`,
-      lecturerId: currentUser.id,
-      dayOfWeek,
-      startTime,
-      endTime,
-      isDefault,
-    };
-    const updated = availabilityRules.map((ar) =>
-      ar.lecturerId === currentUser.id && isDefault ? { ...ar, isDefault: false } : ar
-    );
-    updated.unshift(newAr);
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
-  };
-
-  const handleToggleDefaultAvailability = (id: string) => {
-    const target = availabilityRules.find((ar) => ar.id === id);
-    const nextDefault = !target?.isDefault;
-
-    const updated = availabilityRules.map((ar) => {
-      if (ar.lecturerId !== currentUser.id) return ar;
-      if (ar.id === id) return { ...ar, isDefault: nextDefault };
-      return nextDefault ? { ...ar, isDefault: false } : ar;
-    });
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
-  };
-
-  const handleDeleteAvailability = (id: string) => {
-    const updated = availabilityRules.filter((ar) => ar.id !== id);
-    DB.saveAvailabilityRules(updated);
-    refreshLocalData();
-  };
+export default function LecturerDashboard({ currentUser, onRefresh, activeTab: propActiveTab }: LecturerDashboardProps) {
+  const {
+    activeTab,
+    myStudents,
+    myEventTypes,
+    myAvailabilities,
+    myBookings,
+    guidances,
+    selectedThesisId,
+    setSelectedThesisId,
+    handleVerifyGuidance,
+    handleLecturerSubmitGuidance,
+    handleProcessBookingSubmit,
+    handleCompleteBooking,
+    handleAddAvailability,
+    handleSetAllAvailabilities,
+    handleUpdateAvailability,
+    handleToggleDefaultAvailability,
+    handleDeleteAvailability,
+    handleAddEventType,
+    handleUpdateEventType,
+    handleDeleteEventType,
+  } = useLecturerLogic({ currentUser, onRefresh, propActiveTab });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="lecturer-dashboard-container">
@@ -161,14 +75,30 @@ export default function LecturerDashboard({ currentUser, onRefresh }: LecturerDa
           />
         )}
 
+        {activeTab === 'eventTypes' && (
+          <EventTypesTab
+            myEventTypes={myEventTypes}
+            myAvailabilities={myAvailabilities}
+            handleAddEventType={handleAddEventType}
+            handleUpdateEventType={handleUpdateEventType}
+            handleDeleteEventType={handleDeleteEventType}
+          />
+        )}
+
         {activeTab === 'scheduling' && (
           <SchedulingTab
             myAvailabilities={myAvailabilities}
             handleAddAvailability={handleAddAvailability}
+            handleSetAllAvailabilities={handleSetAllAvailabilities}
+            handleUpdateAvailability={handleUpdateAvailability}
             handleToggleDefaultAvailability={handleToggleDefaultAvailability}
             handleDeleteAvailability={handleDeleteAvailability}
           />
         )}
+      </div>
+
+      <div className="lg:col-span-12">
+        <RoleFooter role={currentUser.role} currentUser={currentUser} />
       </div>
     </div>
   );

@@ -17,8 +17,10 @@ class Availability extends Model
 
     protected $fillable = [
         'id',
+        'availability_id',
         'lecturer_id',
         'name',
+        'slug',
         'is_default',
         'rules',
         'day_of_week',
@@ -34,5 +36,10 @@ class Availability extends Model
     public function lecturer()
     {
         return $this->belongsTo(User::class, 'lecturer_id');
+    }
+
+    public function eventTypes()
+    {
+        return $this->hasMany(EventType::class, 'availability_id');
     }
 }
