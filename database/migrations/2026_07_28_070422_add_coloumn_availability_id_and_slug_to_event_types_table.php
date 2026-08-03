@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('availabilities', function (Blueprint $table) {
+        Schema::table('event_types', function (Blueprint $table) {
             $table->dropColumn(['availability_id', 'slug']);
         });
     }
