@@ -1,19 +1,9 @@
 // components/bimbingan/lecturer/SchedulingTab.tsx
-import { useState } from 'react';
-import {
-  Clock,
-  Plus,
-  Trash2,
-  Calendar as CalendarIcon,
-  Star,
-  Users,
-  Edit2,
-  Check,
-  X,
-  Sliders,
-} from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, MoreHorizontal, Globe, Trash2, Edit3 } from 'lucide-react';
 import type { AvailabilityRule, AvailabilityRuleConfig } from '@/types';
 import { toast } from 'sonner';
+import ScheduleDetailEditor from './EditorScheduleDetail';
 
 interface SchedulingTabProps {
   myAvailabilities: AvailabilityRule[];
@@ -24,590 +14,357 @@ interface SchedulingTabProps {
     isDefault: boolean,
     rules?: AvailabilityRuleConfig
   ) => void;
+  handleSetAllAvailabilities?: (newRules: AvailabilityRule[]) => void;
   handleUpdateAvailability?: (id: string, updatedRule: Partial<AvailabilityRule>) => void;
   handleToggleDefaultAvailability?: (id: string) => void;
   handleDeleteAvailability: (id: string) => void;
 }
 
-const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-
-const TIME_OPTIONS = [
-  '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
-  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
-];
+const DAY_ABBR = ['Ming', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
 export default function SchedulingTab({
   myAvailabilities,
   handleAddAvailability,
+  handleSetAllAvailabilities,
   handleUpdateAvailability,
   handleToggleDefaultAvailability,
   handleDeleteAvailability,
 }: SchedulingTabProps) {
-  // Base Form State Add Availability Rule
-  const [availDay, setAvailDay] = useState<number>(1); // Monday
-  const [availStartTime, setAvailStartTime] = useState('09:00');
-  const [availEndTime, setAvailEndTime] = useState('12:00');
-  const [availIsDefault, setAvailIsDefault] = useState<boolean>(true);
+  // Navigation View state: 'list' (Daftar Jadwal) or 'editor' (Form Pengeditan Jam Detail)
+  const [activeView, setActiveView] = useState<'list' | 'editor'>('list');
+  const [selectedScheduleName, setSelectedScheduleName] = useState<string>('Bimbingan Judul Skripsi');
 
-  // Rules Form State
-  const [sessionName, setSessionName] = useState('Sesi Pagi');
-  const [maxQuotaPerSession, setMaxQuotaPerSession] = useState<number>(5);
-  const [maxQuotaTotal, setMaxQuotaTotal] = useState<number>(20);
-  const [sessionDurationMinutes, setSessionDurationMinutes] = useState<number>(30);
+  // Menu popup state
+  const [openMenuName, setOpenMenuName] = useState<string | null>(null);
 
-  // Modal Edit State for existing rules
-  const [editingRule, setEditingRule] = useState<AvailabilityRule | null>(null);
-  const [editDay, setEditDay] = useState<number>(1);
-  const [editStartTime, setEditStartTime] = useState<string>('09:00');
-  const [editEndTime, setEditEndTime] = useState<string>('12:00');
-  const [editSessionName, setEditSessionName] = useState('');
-  const [editMaxQuotaPerSession, setEditMaxQuotaPerSession] = useState<number>(5);
-  const [editMaxQuotaTotal, setEditMaxQuotaTotal] = useState<number>(20);
-  const [editSessionDuration, setEditSessionDuration] = useState<number>(30);
+  // Modal states for new schedule
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newScheduleName, setNewScheduleName] = useState('');
 
-  const onSubmitAvailForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!availStartTime || !availEndTime) return;
-    if (availStartTime >= availEndTime) {
-      alert('Jam selesai harus lebih besar dari jam mulai.');
-      return;
+  // Group availabilities by schedule name for List View
+  const groupedSchedules = useMemo(() => {
+    if (!myAvailabilities || myAvailabilities.length === 0) {
+      return [];
     }
 
-    const rulesObj: AvailabilityRuleConfig = {
-      sessionName,
-      maxQuotaPerSession,
-      maxQuotaTotal,
-      sessionDurationMinutes,
-    };
+    const map = new Map<
+      string,
+      {
+        name: string;
+        isDefault: boolean;
+        rules: AvailabilityRule[];
+        timezone: string;
+      }
+    >();
 
-    handleAddAvailability(
-      Number(availDay),
-      availStartTime,
-      availEndTime,
-      availIsDefault,
-      rulesObj
-    );
-
-    toast.success(
-      availIsDefault
-        ? 'Jadwal Utama bimbingan & Aturan Sesi berhasil ditambahkan!'
-        : 'Jadwal Cadangan bimbingan & Aturan Sesi berhasil ditambahkan!'
-    );
-  };
-
-  const openEditModal = (ar: AvailabilityRule) => {
-    setEditingRule(ar);
-    setEditDay(ar.dayOfWeek);
-    setEditStartTime(ar.startTime);
-    setEditEndTime(ar.endTime);
-
-    const existingRules = ar.rules || {
-      sessionName: 'Sesi Pagi',
-      maxQuotaPerSession: 5,
-      maxQuotaTotal: 20,
-      sessionDurationMinutes: 30,
-    };
-    setEditSessionName(existingRules.sessionName || 'Sesi Pagi');
-    setEditMaxQuotaPerSession(existingRules.maxQuotaPerSession ?? 5);
-    setEditMaxQuotaTotal(existingRules.maxQuotaTotal ?? 20);
-    setEditSessionDuration(existingRules.sessionDurationMinutes ?? 30);
-  };
-
-  const handleSaveEditRule = () => {
-    if (!editingRule || !handleUpdateAvailability) return;
-
-    if (editStartTime >= editEndTime) {
-      alert('Jam selesai harus lebih besar dari jam mulai.');
-      return;
-    }
-
-    const updatedRulesObj: AvailabilityRuleConfig = {
-      sessionName: editSessionName,
-      maxQuotaPerSession: editMaxQuotaPerSession,
-      maxQuotaTotal: editMaxQuotaTotal,
-      sessionDurationMinutes: editSessionDuration,
-    };
-
-    handleUpdateAvailability(editingRule.id, {
-      dayOfWeek: editDay,
-      startTime: editStartTime,
-      endTime: editEndTime,
-      rules: updatedRulesObj,
+    myAvailabilities.forEach((ar) => {
+      const name = ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi';
+      if (!map.has(name)) {
+        map.set(name, {
+          name,
+          isDefault: ar.isDefault ?? false,
+          rules: [],
+          timezone: 'Asia/Jakarta',
+        });
+      }
+      const item = map.get(name)!;
+      item.rules.push(ar);
+      if (ar.isDefault) item.isDefault = true;
     });
 
-    toast.success('Aturan ketersediaan berhasil diperbarui!');
-    setEditingRule(null);
+    const result: {
+      name: string;
+      isDefault: boolean;
+      summary: string;
+      timezone: string;
+      rules: AvailabilityRule[];
+    }[] = [];
+
+    map.forEach((item) => {
+      const daysMap = new Map<number, { startTime: string; endTime: string }[]>();
+      item.rules.forEach((r) => {
+        if (!daysMap.has(r.dayOfWeek)) daysMap.set(r.dayOfWeek, []);
+        daysMap.get(r.dayOfWeek)!.push({ startTime: r.startTime, endTime: r.endTime });
+      });
+
+      const activeDays: number[] = [];
+      let timeRangeStr = '09:00 - 17:00 WIB';
+
+      [1, 2, 3, 4, 5, 6, 0].forEach((d) => {
+        if (daysMap.has(d)) {
+          activeDays.push(d);
+          const slots = daysMap.get(d)!;
+          if (slots.length > 0) {
+            timeRangeStr = `${slots[0].startTime} - ${slots[0].endTime} WIB`;
+          }
+        }
+      });
+
+      let daysSummary = '';
+      if (activeDays.length > 0) {
+        daysSummary = activeDays.map((d) => DAY_ABBR[d]).join(', ');
+      } else {
+        daysSummary = 'Belum ada hari diatur';
+      }
+
+      result.push({
+        name: item.name,
+        isDefault: item.isDefault,
+        summary: `${daysSummary}, ${timeRangeStr}`,
+        timezone: item.timezone,
+        rules: item.rules,
+      });
+    });
+
+    return result;
+  }, [myAvailabilities]);
+
+  // Open Editor View for a specific schedule
+  const handleOpenEditorForSchedule = (targetName: string) => {
+    setSelectedScheduleName(targetName);
+    setOpenMenuName(null);
+    setActiveView('editor');
+  };
+
+  // Save Schedule from ScheduleDetailEditor
+  const handleSaveScheduleFromEditor = (
+    newRulesList: AvailabilityRule[],
+    updatedName: string,
+    isDefault: boolean
+  ) => {
+    const finalNewRules = newRulesList.map((r) => ({
+      ...r,
+      name: updatedName,
+      isDefault: isDefault,
+    }));
+
+    if (handleSetAllAvailabilities) {
+      const updatedExisting = isDefault
+        ? myAvailabilities.map((ar) => ({ ...ar, isDefault: false }))
+        : myAvailabilities;
+      const otherRules = updatedExisting.filter(
+        (ar) => (ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi') !== selectedScheduleName
+      );
+      handleSetAllAvailabilities([...otherRules, ...finalNewRules]);
+    } else {
+      myAvailabilities
+        .filter((ar) => (ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi') === selectedScheduleName)
+        .forEach((ar) => handleDeleteAvailability(ar.id));
+
+      if (isDefault) {
+        myAvailabilities.forEach((ar) => {
+          if (ar.isDefault && handleUpdateAvailability) {
+            handleUpdateAvailability(ar.id, { isDefault: false });
+          }
+        });
+      }
+
+      finalNewRules.forEach((r) =>
+        handleAddAvailability(r.dayOfWeek, r.startTime, r.endTime, isDefault, r.rules)
+      );
+    }
+
+    toast.success(`Jadwal ketersediaan "${updatedName}" berhasil disimpan!`);
+  };
+
+  // Create new schedule from modal
+  const handleCreateSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newScheduleName.trim();
+    if (!name) return;
+
+    setSelectedScheduleName(name);
+    setShowAddModal(false);
+    setNewScheduleName('');
+    setActiveView('editor');
+    toast.success(`Jadwal "${name}" berhasil dibuat. Silakan atur jam ketersediaan.`);
+  };
+
+  // Delete Schedule
+  const handleDeleteGroup = (targetName: string) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus seluruh jadwal ketersediaan "${targetName}"?`)) {
+      const matching = myAvailabilities.filter(
+        (ar) => (ar.name?.trim() || ar.rules?.sessionName?.trim() || 'Bimbingan Judul Skripsi') === targetName
+      );
+      matching.forEach((ar) => handleDeleteAvailability(ar.id));
+      toast.success(`Jadwal "${targetName}" berhasil dihapus.`);
+      setOpenMenuName(null);
+      setActiveView('list');
+    }
   };
 
   return (
-    <div className="space-y-6 text-left max-w-4xl mx-auto" id="calcom-scheduling-container">
-      {/* Header Banner */}
-      <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-2">
-          <Clock className="w-3.5 h-3.5" />
-          <span>Ketersediaan Waktu & Sesi Bimbingan</span>
-        </div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-          Jam Ketersediaan & Aturan Sesi
-        </h2>
-        <p className="text-xs md:text-sm text-muted-foreground mt-1">
-          Atur jam bimbingan mingguan (WIB) beserta aturan sesi (kuota per sesi, limit total kuota, dan durasi per sesi).
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        {/* Form Tambah Jam Ketersediaan */}
-        <form
-          onSubmit={onSubmitAvailForm}
-          className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-              <Plus className="w-4 h-4 text-emerald-600" />
-              <span>Tambah Slot Jam & Aturan Sesi</span>
-            </p>
-          </div>
-
-          {/* Core Slot Information: 24-hour WIB Dropdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50/50 dark:bg-zinc-800/40 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800">
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-muted-foreground">Hari</label>
-              <select
-                value={availDay}
-                onChange={(e) => setAvailDay(Number(e.target.value))}
-                className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
-              >
-                {DAY_NAMES.map((d, idx) => (
-                  <option key={idx} value={idx}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+    <div className="space-y-6 font-sans max-w-6xl mx-auto text-emerald-950 dark:text-white">
+      {/* ════════════════════════════════════════════════════════════════════════ */}
+      {/* 1. INITIAL LIST VIEW (activeView === 'list')                            */}
+      {/* ════════════════════════════════════════════════════════════════════════ */}
+      {activeView === 'list' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* TOP HEADER SECTION */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-emerald-950 dark:text-white">
+                Ketersediaan Waktu
+              </h1>
+              <p className="text-sm text-emerald-800/70 dark:text-zinc-400 mt-0.5">
+                Atur ketersediaan waktu bimbingan.
+              </p>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-muted-foreground">Jam Mulai (WIB)</label>
-              <select
-                value={availStartTime}
-                onChange={(e) => setAvailStartTime(e.target.value)}
-                className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono font-bold text-gray-800 dark:text-gray-200"
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="py-2 px-4 rounded-xl bg-white dark:bg-zinc-100 hover:bg-emerald-50 text-emerald-950 dark:text-zinc-900 font-bold text-xs shadow-xs hover:shadow-md border border-emerald-200 dark:border-zinc-300 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
               >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t} WIB
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-muted-foreground">Jam Selesai (WIB)</label>
-              <select
-                value={availEndTime}
-                onChange={(e) => setAvailEndTime(e.target.value)}
-                className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono font-bold text-gray-800 dark:text-gray-200"
-              >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t} WIB
-                  </option>
-                ))}
-              </select>
+                <Plus className="w-4 h-4 text-emerald-800 dark:text-zinc-900" />
+                <span>New</span>
+              </button>
             </div>
           </div>
 
-          {/* Rules Section: Form Visual */}
-          <div className="border border-emerald-100 dark:border-emerald-950/60 bg-emerald-50/30 dark:bg-emerald-950/10 p-4.5 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                  Aturan Sesi & Kuota
-                </h4>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Nama Sesi
-                </label>
-                <input
-                  type="text"
-                  value={sessionName}
-                  onChange={(e) => setSessionName(e.target.value)}
-                  placeholder="Contoh: Sesi Pagi"
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Batas Kuota / Sesi
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={maxQuotaPerSession}
-                  onChange={(e) => setMaxQuotaPerSession(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Batas Kuota Total
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={200}
-                  value={maxQuotaTotal}
-                  onChange={(e) => setMaxQuotaTotal(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Durasi / Sesi (menit)
-                </label>
-                <select
-                  value={sessionDurationMinutes}
-                  onChange={(e) => setSessionDurationMinutes(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
+          {/* SCHEDULE LIST CONTAINER */}
+          {groupedSchedules.length > 0 && (
+            <div className="bg-emerald-950 dark:bg-zinc-900/90 text-white rounded-2xl border border-emerald-900 dark:border-zinc-800 shadow-md divide-y divide-emerald-900/80 dark:divide-zinc-800">
+              {groupedSchedules.map((sched, idx) => (
+                <div
+                  key={idx}
+                  className="p-5 sm:px-6 flex items-center justify-between gap-4 hover:bg-emerald-900/40 dark:hover:bg-zinc-800/50 transition-colors relative rounded-2xl"
                 >
-                  <option value={15}>15 Menit</option>
-                  <option value={20}>20 Menit</option>
-                  <option value={30}>30 Menit</option>
-                  <option value={45}>45 Menit</option>
-                  <option value={60}>60 Menit</option>
-                  <option value={90}>90 Menit</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="availIsDefaultCheck"
-                checked={availIsDefault}
-                onChange={(e) => setAvailIsDefault(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
-              />
-              <label
-                htmlFor="availIsDefaultCheck"
-                className="text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none flex items-center gap-1.5"
-              >
-                <Star
-                  className={`w-3.5 h-3.5 ${
-                    availIsDefault ? 'text-amber-500 fill-amber-500' : 'text-gray-400'
-                  }`}
-                />
-                <span>Jadwal Utama (Default)</span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className="py-2.5 px-6 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Jadwal</span>
-            </button>
-          </div>
-        </form>
-
-        {/* List Availability Rules */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <h3 className="font-bold text-base text-gray-900 dark:text-white">
-                Daftar Jam Ketersediaan ({myAvailabilities.length})
-              </h3>
-            </div>
-          </div>
-
-          {myAvailabilities.length === 0 ? (
-            <div className="bg-gray-50 dark:bg-zinc-900/50 border border-dashed border-gray-200 dark:border-zinc-800 rounded-3xl p-8 text-center text-xs text-muted-foreground">
-              Belum ada jadwal ketersediaan jam yang ditambahkan. Gunakan form di atas untuk menambah jadwal baru.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {myAvailabilities.map((ar) => {
-                const rules = ar.rules || {};
-                return (
+                  {/* Left Content */}
                   <div
-                    key={ar.id}
-                    className={`bg-white dark:bg-zinc-900 border ${
-                      ar.isDefault
-                        ? 'border-emerald-300 dark:border-emerald-900/80 shadow-xs'
-                        : 'border-gray-100 dark:border-zinc-800'
-                    } rounded-2xl p-5 space-y-3 transition-all hover:border-emerald-300 dark:hover:border-emerald-800 animate-in fade-in slide-in-from-top-2 duration-300`}
+                    className="space-y-1.5 cursor-pointer flex-1"
+                    onClick={() => handleOpenEditorForSchedule(sched.name)}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="w-24 px-3 py-1 rounded-xl text-xs font-bold text-center bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
-                          {DAY_NAMES[ar.dayOfWeek] || 'Hari'}
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold tracking-tight text-white capitalize">
+                        {sched.name}
+                      </h3>
+                      {sched.isDefault && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600/30 text-emerald-300 border border-emerald-500/40">
+                          Default
                         </span>
-                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-gray-800 dark:text-gray-200">
-                          <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>
-                            {ar.startTime} - {ar.endTime} WIB
-                          </span>
-                        </div>
-
-                        {ar.isDefault ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-900/50">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                            Jadwal Utama
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-[10px] font-medium">
-                            Cadangan
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {handleUpdateAvailability && (
-                          <button
-                            onClick={() => openEditModal(ar)}
-                            className="p-2 rounded-xl text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer"
-                            title="Edit Aturan Sesi"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        {handleToggleDefaultAvailability && (
-                          <button
-                            onClick={() => {
-                              handleToggleDefaultAvailability(ar.id);
-                              toast.success(
-                                !ar.isDefault
-                                  ? 'Slot berhasil diubah menjadi Jadwal Utama!'
-                                  : 'Slot diubah menjadi Jadwal Cadangan.'
-                              );
-                            }}
-                            className={`p-2 rounded-xl transition-all cursor-pointer ${
-                              ar.isDefault
-                                ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40'
-                                : 'text-gray-400 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-zinc-800'
-                            }`}
-                            title={
-                              ar.isDefault
-                                ? 'Jadwal Utama (Klik untuk ubah jadi Cadangan)'
-                                : 'Jadwal Cadangan (Klik untuk jadikan Utama)'
-                            }
-                          >
-                            <Star
-                              className={`w-4 h-4 ${ar.isDefault ? 'fill-amber-500' : ''}`}
-                            />
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            handleDeleteAvailability(ar.id);
-                            toast.success('Jadwal bimbingan berhasil dihapus.');
-                          }}
-                          className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer shrink-0"
-                          title="Hapus Slot"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Rules Badge Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-gray-100 dark:border-zinc-800/80">
-                      <div className="bg-emerald-50/60 dark:bg-emerald-950/30 p-2 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
-                        <span className="text-[10px] text-muted-foreground block font-medium">Sesi</span>
-                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                          {rules.sessionName || 'Sesi Standard'}
-                        </span>
-                      </div>
+                    <p className="text-xs text-emerald-200/80 dark:text-zinc-400 font-medium">
+                      {sched.summary}
+                    </p>
 
-                      <div className="bg-blue-50/60 dark:bg-blue-950/30 p-2 rounded-xl border border-blue-100 dark:border-blue-900/40">
-                        <span className="text-[10px] text-muted-foreground block font-medium">Batas / Sesi</span>
-                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1 font-mono">
-                          <Users className="w-3 h-3" />
-                          {rules.maxQuotaPerSession ?? 5} Org / Sesi
-                        </span>
-                      </div>
-
-                      <div className="bg-purple-50/60 dark:bg-purple-950/30 p-2 rounded-xl border border-purple-100 dark:border-purple-900/40">
-                        <span className="text-[10px] text-muted-foreground block font-medium">Batas Max Total</span>
-                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1 font-mono">
-                          {rules.maxQuotaTotal ?? 20} Org
-                        </span>
-                      </div>
-
-                      <div className="bg-amber-50/60 dark:bg-amber-950/30 p-2 rounded-xl border border-amber-100 dark:border-amber-900/40">
-                        <span className="text-[10px] text-muted-foreground block font-medium">Durasi / Sesi</span>
-                        <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1 font-mono">
-                          <Clock className="w-3 h-3" />
-                          {rules.sessionDurationMinutes ?? 30} Menit
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-300/80 dark:text-zinc-400 font-medium pt-0.5">
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>{sched.timezone}</span>
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* Right Action Menu (...) */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuName(openMenuName === sched.name ? null : sched.name);
+                      }}
+                      className="p-2 rounded-xl text-emerald-200 hover:text-white hover:bg-emerald-900/60 dark:hover:bg-zinc-800 border border-emerald-800/50 dark:border-zinc-700/60 transition-all cursor-pointer"
+                      title="Options"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+
+                    {/* Popup Dropdown Menu */}
+                    {openMenuName === sched.name && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#1C2C23] text-emerald-950 dark:text-white border border-emerald-200/90 dark:border-emerald-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditorForSchedule(sched.name);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-emerald-900 dark:text-emerald-100 hover:bg-emerald-50 dark:hover:bg-emerald-900/60 flex items-center gap-2.5 cursor-pointer transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Edit Schedule</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteGroup(sched.name);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2.5 border-t border-emerald-100 dark:border-emerald-800/60 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                          <span>Delete Schedule</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* MODAL: Edit Rules & Time Modal */}
-      {editingRule && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-base text-gray-900 dark:text-white">
-                  Edit Jam Ketersediaan & Aturan Sesi
-                </h3>
-              </div>
+      {/* ════════════════════════════════════════════════════════════════════════ */}
+      {/* 2. EDITOR VIEW (ScheduleDetailEditor Component)                         */}
+      {/* ════════════════════════════════════════════════════════════════════════ */}
+      {activeView === 'editor' && (
+        <ScheduleDetailEditor
+          scheduleName={selectedScheduleName}
+          myAvailabilities={myAvailabilities}
+          onBack={() => setActiveView('list')}
+          onSaveSchedule={handleSaveScheduleFromEditor}
+          onDeleteSchedule={handleDeleteGroup}
+        />
+      )}
+
+      {/* MODAL: ADD NEW SCHEDULE */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-emerald-950 dark:bg-zinc-900 border border-emerald-800 dark:border-zinc-800 text-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-emerald-900 dark:border-zinc-800 pb-3">
+              <h3 className="text-lg font-bold tracking-tight text-white">Add a new schedule</h3>
               <button
-                onClick={() => setEditingRule(null)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="p-1 rounded-lg text-emerald-300 hover:text-white hover:bg-emerald-900 dark:hover:bg-zinc-800 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            {/* Time Slot Editing: 24-hour WIB Dropdowns */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 dark:bg-zinc-800/60 p-3 rounded-2xl border border-gray-100 dark:border-zinc-800">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Hari</label>
-                <select
-                  value={editDay}
-                  onChange={(e) => setEditDay(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-medium"
-                >
-                  {DAY_NAMES.map((d, idx) => (
-                    <option key={idx} value={idx}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Jam Mulai (WIB)</label>
-                <select
-                  value={editStartTime}
-                  onChange={(e) => setEditStartTime(e.target.value)}
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-mono font-bold text-gray-800 dark:text-gray-200"
-                >
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {t} WIB
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Jam Selesai (WIB)</label>
-                <select
-                  value={editEndTime}
-                  onChange={(e) => setEditEndTime(e.target.value)}
-                  className="w-full p-2.5 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-mono font-bold text-gray-800 dark:text-gray-200"
-                >
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {t} WIB
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Rules Editing */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Nama Sesi
+            <form onSubmit={handleCreateSchedule} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-emerald-200 dark:text-zinc-300 block">
+                  Name
                 </label>
                 <input
                   type="text"
-                  value={editSessionName}
-                  onChange={(e) => setEditSessionName(e.target.value)}
-                  className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-medium"
+                  value={newScheduleName}
+                  onChange={(e) => setNewScheduleName(e.target.value)}
+                  placeholder="e.g. Bimbingan Judul Skripsi"
+                  required
+                  className="w-full bg-emerald-900/60 dark:bg-zinc-800 border border-emerald-700 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-emerald-400/50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Batas Kuota / Sesi
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={editMaxQuotaPerSession}
-                  onChange={(e) => setEditMaxQuotaPerSession(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Batas Kuota Total
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={editMaxQuotaTotal}
-                  onChange={(e) => setEditMaxQuotaTotal(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                  Durasi / Sesi (menit)
-                </label>
-                <select
-                  value={editSessionDuration}
-                  onChange={(e) => setEditSessionDuration(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-xl text-xs bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-medium"
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-emerald-300 hover:text-white transition-colors cursor-pointer"
                 >
-                  <option value={15}>15 Menit</option>
-                  <option value={20}>20 Menit</option>
-                  <option value={30}>30 Menit</option>
-                  <option value={45}>45 Menit</option>
-                  <option value={60}>60 Menit</option>
-                </select>
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-white text-emerald-950 font-bold rounded-xl text-xs shadow-xs hover:bg-emerald-100 transition-all cursor-pointer"
+                >
+                  Continue
+                </button>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-zinc-800">
-              <button
-                type="button"
-                onClick={() => setEditingRule(null)}
-                className="w-1/2 py-2.5 rounded-xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 text-xs font-bold transition-all cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEditRule}
-                className="w-1/2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <Check className="w-4 h-4" />
-                <span>Simpan Perubahan</span>
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
