@@ -23,9 +23,6 @@ class Availability extends Model
         'slug',
         'is_default',
         'rules',
-        'day_of_week',
-        'start_time',
-        'end_time',
     ];
 
     protected $casts = [
@@ -33,8 +30,22 @@ class Availability extends Model
         'rules' => 'array',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = 'ar-' . (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
+
     public function lecturer()
     {
         return $this->belongsTo(User::class, 'lecturer_id');
+    }
+
+    public function eventTypes()
+    {
+        return $this->hasMany(EventType::class, 'availability_id');
     }
 }

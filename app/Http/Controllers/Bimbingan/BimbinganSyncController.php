@@ -215,22 +215,49 @@ class BimbinganSyncController extends Controller
     public function syncEventTypes(Request $request)
     {
         try {
-            $lecturerId = auth()->id();
-            if ($lecturerId) {
-                $incomingIds = collect($request->input('eventTypes', []))->pluck('id')->toArray();
-                EventType::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
+            $defaultLecturer = User::whereHas('roles', function ($q) {
+                $q->where('name', 'lecturer');
+            })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
 
-                foreach ($request->input('eventTypes', []) as $et) {
-                    EventType::updateOrCreate(
-                        ['id' => $et['id']],
-                        [
-                            'lecturer_id' => $et['lecturerId'],
-                            'name' => $et['name'],
-                            'duration' => $et['duration'],
-                            'description' => $et['description'] ?? null,
-                        ]
-                    );
+            $lecturerId = auth()->id() ?? $defaultLecturer?->id;
+
+            $incoming = $request->input('eventTypes', []);
+            $incomingIds = collect($incoming)->pluck('id')->toArray();
+
+            if ($lecturerId) {
+                EventType::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
+            }
+
+            foreach ($incoming as $et) {
+                $targetLecturerId = $et['lecturerId'] ?? null;
+                if (!$targetLecturerId || !User::where('id', $targetLecturerId)->exists()) {
+                    $targetLecturerId = $lecturerId;
                 }
+
+                $availId = $et['availabilityId'] ?? null;
+                if ($availId && !Availability::where('id', $availId)->exists()) {
+                    $availId = null;
+                }
+                if (!$availId) {
+                    $defaultAvail = Availability::where('lecturer_id', $targetLecturerId)->where('is_default', true)->first()
+                        ?? Availability::where('lecturer_id', $targetLecturerId)->first();
+                    $availId = $defaultAvail?->id;
+                }
+
+                EventType::updateOrCreate(
+                    ['id' => $et['id']],
+                    [
+                        'availability_id' => $availId,
+                        'lecturer_id' => $targetLecturerId,
+                        'name' => $et['name'],
+                        'slug' => $et['slug'] ?? \Illuminate\Support\Str::slug($et['name']),
+                        'duration' => $et['duration'] ?? 30,
+                        'max_quota_per_session' => $et['maxQuotaPerSession'] ?? 1,
+                        'description' => $et['description'] ?? null,
+                        'location_type' => $et['locationType'] ?? 'offline',
+                        'location_details' => $et['locationDetails'] ?? null,
+                    ]
+                );
             }
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
@@ -242,29 +269,112 @@ class BimbinganSyncController extends Controller
     public function syncAvailabilityRules(Request $request)
     {
         try {
-            $lecturerId = auth()->id();
+            $defaultLecturer = User::whereHas('roles', function ($q) {
+                $q->where('name', 'lecturer');
+            })->first() ?? User::where('email', 'irwan@umsu.ac.id')->first() ?? User::first();
+
+            $lecturerId = auth()->id() ?? $defaultLecturer?->id;
+
             if ($lecturerId) {
-                // Registrasi / panggil AvailabilityObserver secara eksplisit
                 Availability::observe(\App\Observers\AvailabilityObserver::class);
 
-                $incomingIds = collect($request->input('availabilityRules', []))->pluck('id')->toArray();
+                $incomingRules = $request->input('availabilityRules', []);
+
+                // Group by schedule name so 1 Schedule Card = EXACTLY 1 Row in DB
+                $grouped = [];
+                foreach ($incomingRules as $rule) {
+                    $name = trim($rule['name'] ?? $rule['rules']['sessionName'] ?? 'Bimbingan Judul Skripsi');
+                    if (!isset($grouped[$name])) {
+                        $grouped[$name] = [
+                            'id' => $rule['id'],
+                            'name' => $name,
+                            'lecturerId' => $rule['lecturerId'] ?? $lecturerId,
+                            'isDefault' => !empty($rule['isDefault']),
+                            'sessionDurationMinutes' => $rule['rules']['sessionDurationMinutes'] ?? 30,
+                            'maxQuotaPerSession' => $rule['rules']['maxQuotaPerSession'] ?? 1,
+                            'maxQuotaTotal' => $rule['rules']['maxQuotaTotal'] ?? 20,
+                            'slots' => [],
+                        ];
+                    }
+
+                    if (isset($rule['rules']['slots']) && is_array($rule['rules']['slots'])) {
+                        $grouped[$name]['slots'] = $rule['rules']['slots'];
+                    } else {
+                        $grouped[$name]['slots'][] = [
+                            'dayOfWeek' => (int) $rule['dayOfWeek'],
+                            'startTime' => $rule['startTime'],
+                            'endTime' => $rule['endTime'],
+                        ];
+                    }
+
+                    if (!empty($rule['isDefault'])) {
+                        $grouped[$name]['isDefault'] = true;
+                    }
+                }
+
+                $incomingIds = collect($grouped)->pluck('id')->toArray();
                 Availability::where('lecturer_id', $lecturerId)->whereNotIn('id', $incomingIds)->delete();
 
-                foreach ($request->input('availabilityRules', []) as $rule) {
-                    $lecturer = User::find($rule['lecturerId'] ?? $lecturerId);
-                    $availability = Availability::find($rule['id']) ?? new Availability(['id' => $rule['id']]);
+                $dayNames = [
+                    0 => 'Minggu',
+                    1 => 'Senin',
+                    2 => 'Selasa',
+                    3 => 'Rabu',
+                    4 => 'Kamis',
+                    5 => 'Jumat',
+                    6 => 'Sabtu',
+                ];
+                $dayCodes = [
+                    'minggu' => 0,
+                    'senin' => 1,
+                    'selasa' => 2,
+                    'rabu' => 3,
+                    'kamis' => 4,
+                    'jumat' => 5,
+                    'sabtu' => 6,
+                ];
 
+                foreach ($grouped as $group) {
+                    $targetLecturerId = $group['lecturerId'];
+                    if (!User::where('id', $targetLecturerId)->exists()) {
+                        $targetLecturerId = $lecturerId;
+                    }
+
+                    $formattedSlots = [];
+                    foreach ($group['slots'] as $s) {
+                        $dNum = 1;
+                        if (isset($s['dayOfWeek']) && is_numeric($s['dayOfWeek'])) {
+                            $dNum = (int) $s['dayOfWeek'];
+                        } elseif (isset($s['day']) && is_string($s['day']) && isset($dayCodes[strtolower($s['day'])])) {
+                            $dNum = $dayCodes[strtolower($s['day'])];
+                        }
+
+                        $dName = isset($s['day']) && is_string($s['day']) && trim($s['day']) !== ''
+                            ? ucfirst(trim($s['day']))
+                            : ($dayNames[$dNum] ?? 'Senin');
+
+                        $formattedSlots[] = [
+                            'day' => $dName,
+                            'dayOfWeek' => $dNum,
+                            'startTime' => $s['startTime'],
+                            'endTime' => $s['endTime'],
+                        ];
+                    }
+
+                    $targetId = !empty($group['id']) ? $group['id'] : 'ar-' . (string) \Illuminate\Support\Str::uuid();
+                    $availability = Availability::find($targetId) ?? new Availability(['id' => $targetId]);
                     $availability->fill([
-                        'lecturer_id' => $rule['lecturerId'],
-                        'name' => $rule['name'] ?? ($lecturer ? $lecturer->name : null),
-                        'is_default' => isset($rule['isDefault']) ? (bool)$rule['isDefault'] : false,
-                        'rules' => $rule['rules'] ?? null,
-                        'day_of_week' => $rule['dayOfWeek'],
-                        'start_time' => $rule['startTime'],
-                        'end_time' => $rule['endTime'],
+                        'lecturer_id' => $targetLecturerId,
+                        'name' => $group['name'],
+                        'is_default' => (bool) $group['isDefault'],
+                        'rules' => [
+                            'sessionName' => $group['name'],
+                            'sessionDurationMinutes' => (int) $group['sessionDurationMinutes'],
+                            'maxQuotaPerSession' => (int) $group['maxQuotaPerSession'],
+                            'maxQuotaTotal' => (int) $group['maxQuotaTotal'],
+                            'slots' => $formattedSlots,
+                        ],
                     ]);
-
-                    // Memanggil save() untuk memicu event observer (saving/created/updated)
                     $availability->save();
                 }
             }
@@ -278,7 +388,17 @@ class BimbinganSyncController extends Controller
     public function syncBookings(Request $request)
     {
         try {
-            foreach ($request->input('bookings', []) as $booking) {
+            $user = auth()->user();
+            $incomingBookings = $request->input('bookings', []);
+            $incomingIds = collect($incomingBookings)->pluck('id')->toArray();
+
+            if ($user && $user->hasRole('student')) {
+                Appointment::where('student_id', $user->id)
+                    ->whereNotIn('id', $incomingIds)
+                    ->delete();
+            }
+
+            foreach ($incomingBookings as $booking) {
                 $studentId = $booking['studentId'] ?? null;
                 if (!$studentId || !User::where('id', $studentId)->exists()) {
                     $studentId = auth()->id() ?? User::first()?->id;

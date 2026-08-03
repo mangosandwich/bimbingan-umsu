@@ -63,3 +63,9 @@ Route::middleware(['auth'])->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+// Route Halaman Booking publik (Diletakkan paling akhir agar rute sistem seperti /settings/profile dievaluasi duluan)
+Route::get('bimbingan/{slug}', [DashboardController::class, 'bookingSlugPage'])->name('bimbingan.booking-slug-legacy');
+Route::get('{lecturerUsername}/{slug}', [DashboardController::class, 'bookingSlugPage'])
+    ->where('lecturerUsername', '^(?!(dosen|mahasiswa|kaprodi|dashboard|configuration|settings|auth|demo|bimbingan)$).*')
+    ->name('bimbingan.booking-slug');

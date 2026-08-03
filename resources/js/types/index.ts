@@ -110,10 +110,15 @@ export interface Guidance {
 
 export interface EventType {
     id: string;
+    availabilityId?: string;
     lecturerId: string;
     name: string;
+    slug?: string;
     duration: number;
+    maxQuotaPerSession?: number;
     description?: string;
+    locationType?: 'offline' | 'online';
+    locationDetails?: string;
 }
 
 export interface AvailabilityRuleConfig {
@@ -126,7 +131,10 @@ export interface AvailabilityRuleConfig {
 
 export interface AvailabilityRule {
     id: string;
+    availabilityId?: string;
     lecturerId: string;
+    name?: string;
+    slug?: string;
     dayOfWeek: number;
     startTime: string;
     endTime: string;
