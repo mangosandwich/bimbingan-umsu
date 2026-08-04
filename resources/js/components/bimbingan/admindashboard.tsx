@@ -184,18 +184,20 @@ export default function AdminDashboard({ currentUser, onRefresh, activeTab: prop
   const pendingSupervisors = theses.filter(t => t.status === 'pending_supervisor').length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="admin-dashboard-container">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" id="admin-dashboard-container">
       {/* 1. Komponen Navigasi Samping */}
-      <AdminSidebar
-        currentUser={currentUser}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        pendingProposals={pendingProposals}
-        pendingSupervisors={pendingSupervisors}
-      />
+      <div className="lg:col-span-3 w-full">
+        <AdminSidebar
+          currentUser={currentUser}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          pendingProposals={pendingProposals}
+          pendingSupervisors={pendingSupervisors}
+        />
+      </div>
 
       {/* Main Content Area */}
-      <div className="lg:col-span-9 space-y-6">
+      <div className="lg:col-span-9 space-y-6 min-w-0">
         {/* 2. Kondisi Tab Aktif Menggunakan Komponen Kecil */}
         {activeTab === 'overview' && (
           <OverviewTab
@@ -232,10 +234,6 @@ export default function AdminDashboard({ currentUser, onRefresh, activeTab: prop
             handleUpdateUserRole={handleUpdateUserRole}
           />
         )}
-      </div>
-
-      <div className="lg:col-span-12">
-        <RoleFooter role={currentUser.role} currentUser={currentUser} />
       </div>
     </div>
   );

@@ -3,7 +3,6 @@ import type { AppUser } from '@/types';
 import { Link } from '@inertiajs/react';
 
 import SpatieInfo from './guest/SpatieInfo';
-import RoleFooter from './RoleFooter';
 
 interface GuestDashboardProps {
   currentUser: AppUser;
@@ -46,8 +45,6 @@ export default function GuestDashboard({ currentUser, onRefresh }: GuestDashboar
           </Link>
         </div>
       </div>
-
-      <RoleFooter role={currentUser.role} currentUser={currentUser} />
     </div>
   );
 }

@@ -513,22 +513,34 @@ export default function CalComBookingView({
                 Jadwal Ketersediaan Dosen:
               </p>
               <div className="space-y-2 text-xs">
-                {activeRules.map((rule, idx) => (
-                  <div key={idx} className="space-y-1 text-gray-800 bg-emerald-50/90 px-3 py-2 rounded-xl border border-emerald-200 shadow-2xs overflow-hidden">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-extrabold text-gray-900 shrink-0 whitespace-nowrap text-xs">{dayNamesFull[rule.dayOfWeek]}</span>
-                      <span className="font-mono font-extrabold text-emerald-950 text-[10.5px] sm:text-[11px] shrink-0 whitespace-nowrap">
-                        {rule.startTime} - {rule.endTime} WIB
-                      </span>
-                    </div>
-                    {rule.rules && (
-                      <div className="flex items-center justify-between text-[10px] font-medium text-emerald-800 border-t border-emerald-200/60 pt-1">
-                        <span className="font-semibold">{rule.rules.sessionName || 'Sesi Standard'}</span>
-                        <span>Batas: {eventType?.maxQuotaPerSession ?? rule.rules?.maxQuotaPerSession ?? 1} org/sesi • {eventType?.duration || rule.rules?.sessionDurationMinutes || 30}m</span>
+                {activeRules.length > 0 ? (
+                  activeRules.map((rule, idx) => (
+                    <div key={idx} className="space-y-1 text-gray-800 bg-emerald-50/90 px-3 py-2 rounded-xl border border-emerald-200 shadow-2xs overflow-hidden">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-gray-900 shrink-0 whitespace-nowrap text-xs">{dayNamesFull[rule.dayOfWeek]}</span>
+                        <span className="font-mono font-extrabold text-emerald-950 text-[10.5px] sm:text-[11px] shrink-0 whitespace-nowrap">
+                          {rule.startTime} - {rule.endTime} WIB
+                        </span>
                       </div>
-                    )}
+                      {rule.rules && (
+                        <div className="flex items-center justify-between text-[10px] font-medium text-emerald-800 border-t border-emerald-200/60 pt-1">
+                          <span className="font-semibold">{rule.rules.sessionName || 'Sesi Standard'}</span>
+                          <span>Batas: {eventType?.maxQuotaPerSession ?? rule.rules?.maxQuotaPerSession ?? 1} org/sesi • {eventType?.duration || rule.rules?.sessionDurationMinutes || 30}m</span>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-amber-50/90 border border-amber-200 p-3 rounded-2xl text-amber-900 space-y-1 text-left">
+                    <p className="font-extrabold text-xs flex items-center gap-1.5 text-amber-800">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      Belum Ada Waktu yang Tersedia
+                    </p>
+                    <p className="text-[11px] text-amber-800/80 leading-relaxed font-medium">
+                      Dosen pembimbing belum menetapkan jadwal ketersediaan waktu bimbingan.
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

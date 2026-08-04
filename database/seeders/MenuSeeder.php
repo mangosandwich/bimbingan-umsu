@@ -155,12 +155,21 @@ class MenuSeeder extends Seeder
         ]);
         $this->attachMenuPermission($sm, ['read'], ['lecturer']);
 
+        $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/jenis-bimbingan'], [
+            'name' => 'Jenis Bimbingan',
+            'category' => $mmDosen->category,
+            'icon' => 'Layers',
+            'active' => 1,
+            'orders' => 2
+        ]);
+        $this->attachMenuPermission($sm, ['read', 'create', 'update', 'delete'], ['lecturer']);
+
         $sm = $mmDosen->subMenus()->updateOrCreate(['url' => $mmDosen->url . '/ketersediaan-waktu'], [
             'name' => 'Ketersediaan Waktu',
             'category' => $mmDosen->category,
             'icon' => 'Clock',
             'active' => 1,
-            'orders' => 2
+            'orders' => 3
         ]);
         $this->attachMenuPermission($sm, ['read', 'create', 'update', 'delete'], ['lecturer']);
 
@@ -169,7 +178,7 @@ class MenuSeeder extends Seeder
             'category' => $mmDosen->category,
             'icon' => 'CalendarCheck',
             'active' => 1,
-            'orders' => 3
+            'orders' => 4
         ]);
         $this->attachMenuPermission($sm, ['read', 'approve', 'reject'], ['lecturer']);
 
