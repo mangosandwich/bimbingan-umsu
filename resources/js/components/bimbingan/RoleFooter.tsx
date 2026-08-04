@@ -137,48 +137,53 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
   const currentConfig = roleConfig[role] || roleConfig.guest;
 
   return (
-    <footer className="w-full mt-auto bg-emerald-800 dark:bg-emerald-950 text-emerald-100 border-t border-emerald-900/60 shadow-lg text-left">
+    <footer className="mt-14 w-full bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 text-emerald-100 rounded-3xl border border-emerald-800/40 shadow-2xl overflow-hidden text-left">
+      {/* Top Decor Glow */}
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 w-full" />
+
       {/* Main Footer Container */}
-      <div className="mx-auto px-4 md:max-w-7xl py-8 md:py-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           
-          {/* Column 1: Branding & Role Info */}
-          <div className="md:col-span-5 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-700 dark:bg-emerald-900 text-white flex items-center justify-center shrink-0 border border-emerald-600/40">
-                <GraduationCap className="w-5 h-5 stroke-[2]" />
+          {/* Column 1: Branding, Role Info & Tag */}
+          <div className="md:col-span-5 space-y-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-emerald-950 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
+                <GraduationCap className="w-6 h-6 stroke-[2.5]" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base tracking-tight leading-tight">
+                <h3 className="font-extrabold text-white text-lg tracking-tight leading-tight flex items-center gap-2">
                   Sistem Skripsi & Bimbingan
+                  <Sparkles className="w-4 h-4 text-emerald-300 animate-pulse" />
                 </h3>
-                <p className="text-xs text-emerald-200/90 font-medium">
+                <p className="text-xs text-emerald-300 font-semibold tracking-wide">
                   Universitas Muhammadiyah Sumatera Utara
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-emerald-200/80 leading-relaxed max-w-md">
+            <p className="text-xs text-emerald-200/90 leading-relaxed max-w-md">
               {currentConfig.description}
             </p>
           </div>
 
           {/* Column 2: Navigation tailored for active Role */}
-          <div className="md:col-span-4 space-y-3">
+          <div className="md:col-span-4 space-y-3.5">
             <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-200 flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Navigasi Utama</span>
+              <Layers className="w-4 h-4 text-emerald-400" />
+              Navigasi Utama
             </h4>
 
-            <ul className="grid grid-cols-1 gap-2 text-xs">
+            <ul className="space-y-2.5 text-xs">
               {currentConfig.quickLinks.map((link: { label: string; href: string }, idx: number) => (
                 <li key={idx}>
                   <Link
                     href={link.href}
-                    className="group inline-flex items-center gap-1.5 text-emerald-100/90 hover:text-white transition-colors"
+                    className="group flex items-center gap-2 text-emerald-100/90 hover:text-white hover:translate-x-1 transition-all duration-200"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 group-hover:bg-emerald-300 group-hover:scale-125 transition-all"></span>
                     <span className="font-medium">{link.label}</span>
+                    <ArrowUpRight className="w-3 h-3 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
                   </Link>
                 </li>
               ))}
@@ -186,31 +191,31 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
           </div>
 
           {/* Column 3: System Status & Contact */}
-          <div className="md:col-span-3 space-y-3">
+          <div className="md:col-span-3 space-y-3.5">
             <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-200 flex items-center gap-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Layanan & Support</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              Status & Layanan
             </h4>
 
-            <div className="bg-emerald-900/50 dark:bg-emerald-900/30 rounded-xl p-3.5 border border-emerald-700/40 space-y-2.5">
+            <div className="bg-emerald-900/60 backdrop-blur-md rounded-2xl p-4 border border-emerald-700/50 space-y-3 shadow-inner">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-emerald-200/80 font-medium">Status Server</span>
-                <span className="inline-flex items-center gap-1.5 font-bold text-emerald-200 text-[11px]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-emerald-200/80">Status Server</span>
+                <span className="inline-flex items-center gap-1 font-bold text-emerald-300 bg-emerald-800/80 px-2 py-0.5 rounded-md border border-emerald-600/40">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   Operasional
                 </span>
               </div>
 
-              <div className="border-t border-emerald-700/40 pt-2 text-xs">
-                <p className="text-emerald-300/70 text-[10px] font-medium uppercase tracking-wider">
+              <div className="border-t border-emerald-800/80 pt-2.5 text-xs">
+                <p className="text-emerald-300/70 text-3xs font-semibold uppercase tracking-wider">
                   Bantuan / Contact Support
                 </p>
                 <a
                   href={`mailto:${currentConfig.contactEmail}`}
-                  className="font-semibold text-white hover:text-emerald-200 transition-colors flex items-center gap-1.5 mt-0.5"
+                  className="font-bold text-white hover:text-emerald-300 transition-colors flex items-center gap-1.5 mt-1"
                 >
-                  <Mail className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>{currentConfig.contactEmail}</span>
+                  <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                  {currentConfig.contactEmail}
                 </a>
               </div>
             </div>
@@ -220,12 +225,14 @@ export default function RoleFooter({ role: propRole, currentUser: propUser }: Ro
       </div>
 
       {/* Bottom Footer Bar */}
-      <div className="border-t border-emerald-900/60 bg-emerald-900/40 dark:bg-emerald-950/60 py-3.5">
-        <div className="mx-auto px-4 md:max-w-7xl flex items-center justify-center gap-2 text-xs text-emerald-200/80 text-center font-medium">
-          <Building2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-          <span>
-            &copy; {new Date().getFullYear()} <strong className="text-white font-semibold">Universitas Muhammadiyah Sumatera Utara (UMSU)</strong>. All rights reserved.
-          </span>
+      <div className="border-t border-emerald-800/60 bg-emerald-950/80 py-4 px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-emerald-300/80">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              &copy; {new Date().getFullYear()} <strong className="text-white">Universitas Muhammadiyah Sumatera Utara (UMSU)</strong>.
+            </span>
+          </div>
         </div>
       </div>
     </footer>

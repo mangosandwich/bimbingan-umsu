@@ -28,15 +28,15 @@ export default function LecturerSidebar({
   ).length;
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm h-fit space-y-6 text-left w-full">
+    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm h-fit space-y-6 text-left">
       {/* Profile Info Header */}
       <div className="flex items-center gap-3 pb-5 border-b border-gray-100 dark:border-zinc-800">
         <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 shadow-xs">
-          <UserCheck className="w-6 h-6 shrink-0" />
+          <UserCheck className="w-6 h-6" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">{currentUser.name}</h3>
-          <p className="text-xs text-muted-foreground font-mono truncate">NIDN: {currentUser.nidn || '0012345678'}</p>
+          <p className="text-xs text-muted-foreground font-mono">NIDN: {currentUser.nidn || '0012345678'}</p>
           <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold truncate mt-0.5">
             {currentUser.department || 'Magister Ilmu Komunikasi'}
           </p>
@@ -59,11 +59,11 @@ export default function LecturerSidebar({
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Users className="w-4.5 h-4.5 shrink-0" />
-          <span className="truncate">Mahasiswa Bimbingan</span>
+          <Users className="w-4.5 h-4.5" />
+          <span>Mahasiswa Bimbingan</span>
           {pendingFeedbackCount > 0 && (
             <span
-              className={`ml-auto font-bold text-[10px] px-2 py-0.5 rounded-full shadow-xs shrink-0 ${
+              className={`ml-auto font-bold text-[10px] px-2 py-0.5 rounded-full shadow-xs ${
                 activeTab === 'students' ? 'bg-amber-500 text-white animate-pulse' : 'bg-amber-500 text-white'
               }`}
             >
@@ -81,8 +81,8 @@ export default function LecturerSidebar({
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Layers className="w-4.5 h-4.5 shrink-0" />
-          <span className="truncate">Jenis Bimbingan</span>
+          <Layers className="w-4.5 h-4.5" />
+          <span>Jenis Bimbingan</span>
         </Link>
 
         {/* Option 3: Ketersediaan Waktu */}
@@ -94,8 +94,8 @@ export default function LecturerSidebar({
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Clock className="w-4.5 h-4.5 shrink-0" />
-          <span className="truncate">Ketersediaan Waktu</span>
+          <Clock className="w-4.5 h-4.5" />
+          <span>Ketersediaan Waktu</span>
         </Link>
 
         {/* Option 3: Persetujuan Jadwal */}
@@ -107,10 +107,10 @@ export default function LecturerSidebar({
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
           }`}
         >
-          <Calendar className="w-4.5 h-4.5 shrink-0" />
-          <span className="truncate">Persetujuan Jadwal</span>
+          <Calendar className="w-4.5 h-4.5" />
+          <span>Persetujuan Jadwal</span>
           {pendingBookingsCount > 0 && (
-            <span className="ml-auto bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full shrink-0">
+            <span className="ml-auto bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full">
               {pendingBookingsCount}
             </span>
           )}
@@ -120,8 +120,8 @@ export default function LecturerSidebar({
       {/* Summary Box */}
       <div className="pt-4 border-t border-gray-100 dark:border-zinc-800">
         <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-2xl space-y-1">
-          <p className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 whitespace-nowrap">
-            <Briefcase className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <p className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+            <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
             Bimbingan Aktif
           </p>
           <p className="text-[11px] text-muted-foreground leading-relaxed">

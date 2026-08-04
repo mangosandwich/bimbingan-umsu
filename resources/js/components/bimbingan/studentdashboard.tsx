@@ -158,9 +158,9 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
     : availabilityRules;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" id="student-dashboard-layout">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="student-dashboard-layout">
       {/* 1. Left Sidebar Navigation Panel */}
-      <div className="lg:col-span-3 w-full">
+      <div className="lg:col-span-3">
         <StudentSidebarNav
           currentUser={currentUser}
           activeTab={activeTab}
@@ -172,7 +172,7 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
       </div>
 
       {/* 2. Right Main Content Area */}
-      <div className="lg:col-span-9 space-y-6 min-w-0">
+      <div className="lg:col-span-9 space-y-6">
         {/* ROUTE 1: OVERVIEW DASHBOARD UTAMA */}
         {activeTab === 'overview' && (
           <div className="space-y-6" id="student-overview-view">
@@ -613,6 +613,10 @@ export default function StudentDashboard({ currentUser, onRefresh, activeTab: pr
             )}
           </div>
         )}
+      </div>
+
+      <div className="lg:col-span-12">
+        <RoleFooter role={currentUser.role} currentUser={currentUser} />
       </div>
     </div>
   );

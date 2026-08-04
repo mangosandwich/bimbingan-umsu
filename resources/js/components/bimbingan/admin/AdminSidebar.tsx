@@ -18,18 +18,18 @@ export default function AdminSidebar({
   pendingSupervisors,
 }: AdminSidebarProps) {
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm h-fit space-y-6 text-left w-full">
-      <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-zinc-800">
+    <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm h-fit">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-          currentUser.role === 'superadmin' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+          currentUser.role === 'superadmin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
         }`}>
-          <GraduationCap className="w-5 h-5 shrink-0" />
+          <GraduationCap className="w-5 h-5" />
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display font-bold text-gray-900 dark:text-white text-sm truncate">
+        <div>
+          <h3 className="font-display font-bold text-gray-900 text-sm">
             {currentUser.role === 'superadmin' ? 'Admin Portal' : 'Kaprodi Portal'}
           </h3>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="text-xs text-gray-500">
             {currentUser.role === 'superadmin' ? 'Administrator' : (currentUser.department || 'Program Studi')}
           </p>
         </div>
@@ -38,27 +38,27 @@ export default function AdminSidebar({
       <nav className="space-y-1">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-            activeTab === 'overview' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+            activeTab === 'overview' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-55/60'
           }`}
           id="nav-overview"
         >
-          <Layers className="w-4 h-4 shrink-0" />
-          <span className="truncate">Ringkasan Sistem</span>
+          <Layers className="w-4 h-4" />
+          Ringkasan Sistem
         </button>
 
         {(currentUser.role === 'prodi' || currentUser.role === 'superadmin') && (
           <button
             onClick={() => setActiveTab('proposals')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-              activeTab === 'proposals' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === 'proposals' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50/60'
             }`}
             id="nav-proposals"
           >
-            <FileText className="w-4 h-4 shrink-0" />
-            <span className="truncate">Seleksi Judul</span>
+            <FileText className="w-4 h-4" />
+            Seleksi Judul
             {pendingProposals > 0 && (
-              <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full shrink-0">
+              <span className="ml-auto bg-amber-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
                 {pendingProposals}
               </span>
             )}
@@ -67,17 +67,17 @@ export default function AdminSidebar({
 
         <button
           onClick={() => setActiveTab('theses')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'theses'
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'text-gray-600 hover:bg-gray-50/60'
           }`}
           id="nav-theses"
         >
-          <BookOpen className="w-4 h-4 shrink-0" />
-          <span className="truncate">Skripsi & Pembimbing</span>
+          <BookOpen className="w-4 h-4" />
+          Skripsi & Pembimbing
           {pendingSupervisors > 0 && (
-            <span className="ml-auto bg-red-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full shrink-0">
+            <span className="ml-auto bg-red-500 text-white font-bold text-2xs px-2 py-0.5 rounded-full">
               {pendingSupervisors}
             </span>
           )}
@@ -85,17 +85,17 @@ export default function AdminSidebar({
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'users'
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'text-gray-600 hover:bg-gray-50/60'
           }`}
           id="nav-users"
         >
-          <Users className="w-4 h-4 shrink-0" />
-          <span className="truncate">Akun & Verifikasi</span>
+          <Users className="w-4 h-4" />
+          Akun & Verifikasi
           {currentUser.role === 'prodi' && (
-            <span className="ml-auto bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 font-semibold text-[10px] px-1.5 py-0.5 rounded-md shrink-0">
+            <span className="ml-auto bg-gray-100 text-gray-500 font-semibold text-[10px] px-1.5 py-0.5 rounded-md">
               View Only
             </span>
           )}

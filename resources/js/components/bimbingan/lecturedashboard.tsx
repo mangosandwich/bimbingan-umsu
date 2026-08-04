@@ -40,9 +40,9 @@ export default function LecturerDashboard({ currentUser, onRefresh, activeTab: p
   } = useLecturerLogic({ currentUser, onRefresh, propActiveTab });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" id="lecturer-dashboard-container">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="lecturer-dashboard-container">
       {/* 1. Left Sidebar Navigation */}
-      <div className="lg:col-span-3 w-full">
+      <div className="lg:col-span-3">
         <LecturerSidebar
           currentUser={currentUser}
           activeTab={activeTab}
@@ -54,7 +54,7 @@ export default function LecturerDashboard({ currentUser, onRefresh, activeTab: p
       </div>
 
       {/* 2. Right Main Content Area */}
-      <div className="lg:col-span-9 space-y-6 min-w-0">
+      <div className="lg:col-span-9 space-y-6">
         {activeTab === 'students' && (
           <StudentsTab
             currentUser={currentUser}
@@ -95,6 +95,10 @@ export default function LecturerDashboard({ currentUser, onRefresh, activeTab: p
             handleDeleteAvailability={handleDeleteAvailability}
           />
         )}
+      </div>
+
+      <div className="lg:col-span-12">
+        <RoleFooter role={currentUser.role} currentUser={currentUser} />
       </div>
     </div>
   );

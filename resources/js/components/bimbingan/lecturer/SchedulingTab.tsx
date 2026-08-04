@@ -1,6 +1,6 @@
 // components/bimbingan/lecturer/SchedulingTab.tsx
 import { useState, useMemo } from 'react';
-import { Plus, MoreHorizontal, Globe, Trash2, Edit3, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, MoreHorizontal, Globe, Trash2, Edit3 } from 'lucide-react';
 import type { AvailabilityRule, AvailabilityRuleConfig } from '@/types';
 import { toast } from 'sonner';
 import ScheduleDetailEditor from './EditorScheduleDetail';
@@ -253,7 +253,7 @@ export default function SchedulingTab({
           </div>
 
           {/* SCHEDULE LIST CONTAINER */}
-          {groupedSchedules.length > 0 ? (
+          {groupedSchedules.length > 0 && (
             <div className="bg-emerald-950 dark:bg-zinc-900/90 text-white rounded-2xl border border-emerald-900 dark:border-zinc-800 shadow-md divide-y divide-emerald-900/80 dark:divide-zinc-800">
               {groupedSchedules.map((sched, idx) => (
                 <div
@@ -330,28 +330,6 @@ export default function SchedulingTab({
                   </div>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-zinc-900 border border-dashed border-gray-200 dark:border-zinc-800 rounded-3xl p-8 md:p-12 text-center space-y-4 shadow-xs">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-xs">
-                <Clock className="w-7 h-7" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white">
-                  Belum Ada Waktu yang Tersedia
-                </h3>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Belum ada jadwal ketersediaan waktu bimbingan yang diatur. Klik tombol <strong>New</strong> atau tombol di bawah untuk membuat jadwal ketersediaan baru.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-2 py-2.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Buat Jadwal Ketersediaan Baru</span>
-              </button>
             </div>
           )}
         </div>

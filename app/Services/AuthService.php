@@ -44,16 +44,11 @@ class AuthService
             $json = $response->json() ?? [];
             Log::info('SIMAKAD API Response:', ['status' => $response->status(), 'body' => $json]);
 
-            $statusVal = $json['status'] ?? null;
+            // Cek sukses berdasarkan status HTTP 2xx atau flag di JSON
+            $hasSuccessFlag = isset($json['status']) && ($json['status'] === true || strtolower((string)$json['status']) === 'success' || $json['status'] === 200);
+            $hasTokenOrData = isset($json['token']) || isset($json['data']) || isset($json['user']);
 
-            // Flag kegagalan yang jelas
-            $isExplicitFailure = ($statusVal === false || $statusVal === 'false' || $statusVal === 0 || $statusVal === '0' || strtolower((string)$statusVal) === 'error' || strtolower((string)$statusVal) === 'failed');
-
-            // Flag keberhasilan yang jelas
-            $isExplicitSuccess = ($statusVal === true || $statusVal === 1 || $statusVal === 200 || $statusVal === '200' || strtolower((string)$statusVal) === 'success' || strtolower((string)$statusVal) === 'true');
-            $hasTokenOrData = isset($json['token']) || isset($json['data']) || isset($json['user']) || isset($json['npm']);
-
-            if ($response->successful() && !$isExplicitFailure && ($isExplicitSuccess || $hasTokenOrData)) {
+            if ($response->successful() && ($hasSuccessFlag || $hasTokenOrData || empty($json['error']))) {
                 return [
                     'success' => true,
                     'status'  => $response->status(),

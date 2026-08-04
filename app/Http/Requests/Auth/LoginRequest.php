@@ -43,10 +43,8 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $login = trim($this->input('npm') ?? $this->input('email') ?? '');
-        $password = (string) $this->input('password');
+        $password = $this->input('password');
         $remember = $this->boolean('remember');
-
-        $apiErrorMessage = null;
 
         // 1. Coba Authentikasi via SIMAKAD UMSU API jika bukan environment testing
         if (! app()->environment('testing')) {
@@ -60,7 +58,6 @@ class LoginRequest extends FormRequest
                     // Cari user lokal berdasarkan email / username / NPM
                     $user = \App\Models\User::where('email', $login)
                         ->orWhere('email', 'like', $login . '@%')
-                        ->orWhere('npm', $login)
                         ->orWhere('name', $login)
                         ->first();
 
@@ -72,24 +69,17 @@ class LoginRequest extends FormRequest
                         $user = \App\Models\User::create([
                             'name'     => $studentName,
                             'email'    => $studentEmail,
-                            'npm'      => $login,
                             'password' => bcrypt($password),
                         ]);
 
                         if (method_exists($user, 'assignRole')) {
                             $user->assignRole('student');
                         }
-                    } else {
-                        if (empty($user->npm) && !str_contains($login, '@')) {
-                            $user->update(['npm' => $login]);
-                        }
                     }
 
                     Auth::login($user, $remember);
                     RateLimiter::clear($this->throttleKey());
                     return;
-                } else {
-                    $apiErrorMessage = $simakadResult['message'] ?? null;
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('SIMAKAD API auth fallback to local: ' . $e->getMessage());
@@ -100,22 +90,17 @@ class LoginRequest extends FormRequest
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
         if (! Auth::attempt([$field => $login, 'password' => $password], $remember)) {
-            // Coba lagi dengan field email atau npm jika attempt pertama gagal
-            $authenticated = false;
-            if ($field === 'username') {
-                if (Auth::attempt(['email' => $login, 'password' => $password], $remember) ||
-                    Auth::attempt(['npm' => $login, 'password' => $password], $remember)) {
-                    $authenticated = true;
-                }
+            // Coba lagi dengan field email jika username gagal
+            if ($field === 'username' && Auth::attempt(['email' => $login, 'password' => $password], $remember)) {
+                RateLimiter::clear($this->throttleKey());
+                return;
             }
 
-            if (! $authenticated) {
-                RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey());
 
-                throw ValidationException::withMessages([
-                    'email' => $apiErrorMessage ?: __('auth.failed'),
-                ]);
-            }
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed'),
+            ]);
         }
 
         RateLimiter::clear($this->throttleKey());

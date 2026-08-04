@@ -8,8 +8,6 @@ import GuestDashboard from '@/components/bimbingan/guestdashboard';
 import LecturerDashboard from '@/components/bimbingan/lecturedashboard';
 import StudentDashboard from '@/components/bimbingan/studentdashboard';
 
-import RoleFooter from '@/components/bimbingan/RoleFooter';
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -139,7 +137,7 @@ export default function Dashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard — Sistem Bimbingan Skripsi UMSU" />
 
-            <div className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
+            <div className="max-w-7xl mx-auto px-4 py-8 w-full">
                 {(appUser.role === 'superadmin' || appUser.role === 'prodi') && (
                     <AdminDashboard currentUser={appUser} onRefresh={refresh} activeTab={activeTab} />
                 )}
@@ -153,8 +151,6 @@ export default function Dashboard({
                     <GuestDashboard currentUser={appUser} onRefresh={refresh} />
                 )}
             </div>
-
-            <RoleFooter role={appUser.role} currentUser={appUser} />
         </AppLayout>
     );
 }
